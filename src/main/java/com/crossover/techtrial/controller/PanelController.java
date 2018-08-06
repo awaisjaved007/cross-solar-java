@@ -7,11 +7,14 @@ import com.crossover.techtrial.service.HourlyElectricityService;
 import com.crossover.techtrial.service.PanelService;
 import java.util.ArrayList;
 import java.util.List;
+
+import javafx.scene.layout.Pane;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,8 +43,12 @@ public class PanelController {
    */
   @PostMapping(path = "/api/register")
   public ResponseEntity<?> registerPanel(@RequestBody Panel panel) {
-    panelService.register(panel);
-    return  ResponseEntity.accepted().build();
+      if (panel != null) {
+          panelService.register(panel);
+          return ResponseEntity.accepted().build();
+      } else {
+          return ResponseEntity.badRequest().build();
+      }
   }
   
   /**
@@ -50,12 +57,19 @@ public class PanelController {
    * @param hourlyElectricity  generated electricity for this panel.
    * @return
    */
-  
+
   @PostMapping(path = "/api/panels/{panel-serial}/hourly")
   public ResponseEntity<?> saveHourlyElectricity(
-      @PathVariable(value = "panel-serial") String panelSerial, 
-      @RequestBody HourlyElectricity hourlyElectricity) {
-    return ResponseEntity.ok(hourlyElectricityService.save(hourlyElectricity));
+          @PathVariable(value = "panel-serial") String panelSerial,
+          @RequestBody HourlyElectricity hourlyElectricity) {
+      Panel panel = !StringUtils.isEmpty(panelSerial) ? panelService.findBySerial(panelSerial) : null;
+      if (panel != null && hourlyElectricity != null) {
+          hourlyElectricity.setPanel(panel);
+          hourlyElectricityService.save(hourlyElectricity);
+          return ResponseEntity.accepted().build();
+      } else {
+          return ResponseEntity.badRequest().build();
+      }
   }
    
   /**
@@ -64,7 +78,7 @@ public class PanelController {
   
   @GetMapping(path = "/api/panels/{panel-serial}/hourly")
   public ResponseEntity<?> hourlyElectricity(
-      @PathVariable(value = "banel-serial") String panelSerial,
+      @PathVariable(value = "panel-serial") String panelSerial,
       @PageableDefault(size = 5,value = 0) Pageable pageable) {
     Panel panel = panelService.findBySerial(panelSerial);
     if (panel == null) {
@@ -81,15 +95,21 @@ public class PanelController {
    * @param panelSerial is unique serial for this Panel.
    * @return
    */
-  
+
   @GetMapping(path = "/api/panels/{panel-serial}/daily")
   public ResponseEntity<List<DailyElectricity>> allDailyElectricityFromYesterday(
-      @PathVariable(value = "panel-serial") String panelSerial) {
-    List<DailyElectricity> dailyElectricityForPanel = new ArrayList<>();
-    /**
-     * IMPLEMENT THE LOGIC HERE and FEEL FREE TO MODIFY OR ADD CODE TO RELATED CLASSES.
-     * MAKE SURE NOT TO CHANGE THE SIGNATURE OF ANY END POINT. NO PAGINATION IS NEEDED HERE.
-     */
-    return ResponseEntity.ok(dailyElectricityForPanel);
+          @PathVariable(value = "panel-serial") String panelSerial) {
+      /**
+       * IMPLEMENT THE LOGIC HERE and FEEL FREE TO MODIFY OR ADD CODE TO RELATED CLASSES.
+       * MAKE SURE NOT TO CHANGE THE SIGNATURE OF ANY END POINT. NO PAGINATION IS NEEDED HERE.
+       */
+      Panel panel = panelService.findBySerial(panelSerial);
+      List<DailyElectricity> dailyElectricityForPanel = new ArrayList<>();
+      if (panel != null) {
+          dailyElectricityForPanel = hourlyElectricityService.findAllDailyElectricityStatistics(panel.getId());
+          return ResponseEntity.ok(dailyElectricityForPanel);
+      } else {
+          return ResponseEntity.badRequest().build();
+      }
   }
 }

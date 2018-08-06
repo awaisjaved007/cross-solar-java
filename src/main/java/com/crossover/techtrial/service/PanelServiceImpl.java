@@ -20,12 +20,12 @@ public class PanelServiceImpl implements PanelService {
   /* (non-Javadoc)
    * @see com.crossover.techtrial.service.PanelService#register(com.crossover.techtrial.model.Panel)
    */
-  
+
   @Override
-  public void register(Panel panel) { 
-    panelRepository.save(panel);
+  public Panel register(Panel panel) {
+    return panelRepository.save(panel);
   }
-  
+
   public Panel findBySerial(String serial) {
     return panelRepository.findBySerial(serial);
   }
